@@ -22,15 +22,19 @@ function hashstream (opts) {
 
   const hash = (s) => crypto.createHash(opts.hash).update(s).digest('base64');
 
-  const hashes = [];
+  const hashes = new Set();
   return through2.obj((file, enc, callback) => {
     const content = file.contents;
     const result = mapItems(content, opts.what, hash).map(h => `'${opts.hash}-${h}'`);
-    hashes.push(...result);
+    result.map(h => hashes.add(h))
 
     if (typeof opts.replace_cb === 'function') {
       const s = opts.replace_cb(content.toString(), hashes);
       file.contents = Buffer.from(s, enc);
+    }
+
+    if (typeof opts.callback === 'function') {
+      opts.callback(hashes)
     }
 
     callback(null, file);
